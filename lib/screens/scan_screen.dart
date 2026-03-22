@@ -5,6 +5,7 @@ import '../models/prenda.dart';
 import '../models/clima_data.dart';
 import '../services/clima_service.dart';
 import '../services/historial_service.dart';
+import '../services/remove_bg_service.dart';
 
 class ScanScreen extends StatefulWidget {
   const ScanScreen({super.key});
@@ -37,7 +38,16 @@ class _ScanScreenState extends State<ScanScreen> {
     try {
       final XFile? foto = await _picker.pickImage(source: fuente, imageQuality: 80, maxWidth: 800);
       if (foto == null) return;
+      if (!mounted) return;
+
       setState(() { _imagen = File(foto.path); _analizando = true; _resultado = null; });
+
+      // Quitar fondo automáticamente
+      final sinFondo = await RemoveBgService.quitarFondo(foto.path);
+      if (sinFondo != null && mounted) {
+        setState(() => _imagen = File(sinFondo));
+      }
+
       final analisis = await _analizarImagen(_imagen!);
       if (_clima != null) {
         final veredicto = evaluarPrenda(
@@ -174,16 +184,24 @@ class _ScanScreenState extends State<ScanScreen> {
           Icon(Icons.camera_alt, size: 52, color: Colors.purple.shade300),
           const SizedBox(height: 10),
           Text('Toca para tomar foto', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.purple.shade200)),
-          Text('La IA identificara tu prenda', style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+          Text('La IA quitara el fondo automaticamente', style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
         ]),
       ),
     );
   }
 
   Widget _buildImagenPreview() {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(20),
-      child: Image.file(_imagen!, width: double.infinity, height: 220, fit: BoxFit.cover),
+    return Container(
+      width: double.infinity, height: 220,
+      decoration: BoxDecoration(
+        color: Colors.purple.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.purple.withValues(alpha: 0.3)),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: Image.file(_imagen!, fit: BoxFit.contain),
+      ),
     );
   }
 

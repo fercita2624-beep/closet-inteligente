@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'dart:io';
 import '../models/prenda_armario.dart';
+import '../services/remove_bg_service.dart';
 
 class ArmarioScreen extends StatefulWidget {
   const ArmarioScreen({super.key});
@@ -23,9 +24,11 @@ class _ArmarioScreenState extends State<ArmarioScreen> {
   Future<void> _cargar() async {
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getStringList('armario') ?? [];
-    if (mounted) setState(() {
-      _prendas = raw.map((e) => PrendaArmario.fromJson(jsonDecode(e))).toList();
-    });
+    if (mounted) {
+      setState(() {
+        _prendas = raw.map((e) => PrendaArmario.fromJson(jsonDecode(e))).toList();
+      });
+    }
   }
 
   Future<void> _guardar() async {
@@ -37,10 +40,31 @@ class _ArmarioScreenState extends State<ArmarioScreen> {
     final foto = await _picker.pickImage(source: ImageSource.camera, imageQuality: 70);
     if (foto == null) return;
     if (!mounted) return;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const AlertDialog(
+        backgroundColor: Color(0xFF1A1A2E),
+        content: Row(children: [
+          CircularProgressIndicator(color: Colors.purple),
+          SizedBox(width: 16),
+          Text('Quitando fondo...', style: TextStyle(color: Colors.white)),
+        ]),
+      ),
+    );
+
+    String imagePath = foto.path;
+    final sinFondo = await RemoveBgService.quitarFondo(foto.path);
+    if (sinFondo != null) imagePath = sinFondo;
+
+    if (!mounted) return;
+    Navigator.pop(context);
+
     final resultado = await Navigator.push<PrendaArmario>(
       context,
       MaterialPageRoute(
-        builder: (_) => AgregarPrendaScreen(imagePath: foto.path),
+        builder: (_) => AgregarPrendaScreen(imagePath: imagePath),
       ),
     );
     if (resultado != null) {
