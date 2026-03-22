@@ -1,42 +1,9 @@
-// armario
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'dart:io';
 import '../models/prenda_armario.dart';
-
-class PrendaArmario {
-  final String id;
-  final String nombre;
-  final String categoria;
-  final String imagePath;
-  final double tempMin;
-  final double tempMax;
-  final String color;
-
-  PrendaArmario({
-    required this.id,
-    required this.nombre,
-    required this.categoria,
-    required this.imagePath,
-    required this.tempMin,
-    required this.tempMax,
-    required this.color,
-  });
-
-  Map<String, dynamic> toJson() => {
-    'id': id, 'nombre': nombre, 'categoria': categoria,
-    'imagePath': imagePath, 'tempMin': tempMin,
-    'tempMax': tempMax, 'color': color,
-  };
-
-  factory PrendaArmario.fromJson(Map<String, dynamic> j) => PrendaArmario(
-    id: j['id'], nombre: j['nombre'], categoria: j['categoria'],
-    imagePath: j['imagePath'], tempMin: j['tempMin'],
-    tempMax: j['tempMax'], color: j['color'],
-  );
-}
 
 class ArmarioScreen extends StatefulWidget {
   const ArmarioScreen({super.key});
@@ -51,10 +18,7 @@ class _ArmarioScreenState extends State<ArmarioScreen> {
   final _picker = ImagePicker();
 
   @override
-  void initState() {
-    super.initState();
-    _cargar();
-  }
+  void initState() { super.initState(); _cargar(); }
 
   Future<void> _cargar() async {
     final prefs = await SharedPreferences.getInstance();
@@ -112,7 +76,7 @@ class _ArmarioScreenState extends State<ArmarioScreen> {
                   dropdownColor: const Color(0xFF1A1A2E),
                   style: const TextStyle(color: Colors.white),
                   decoration: InputDecoration(
-                    labelText: 'Categoría',
+                    labelText: 'Categoria',
                     labelStyle: TextStyle(color: Colors.purple.shade200),
                     enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.purple.shade800)),
                   ),
@@ -122,18 +86,10 @@ class _ArmarioScreenState extends State<ArmarioScreen> {
                   onChanged: (v) => setS(() => categoria = v!),
                 ),
                 const SizedBox(height: 12),
-                Text('Temp. mínima: ${tempMin.toInt()}°C', style: TextStyle(color: Colors.purple.shade200, fontSize: 12)),
-                Slider(
-                  value: tempMin, min: 0, max: 40, divisions: 40,
-                  activeColor: Colors.purple,
-                  onChanged: (v) => setS(() => tempMin = v),
-                ),
-                Text('Temp. máxima: ${tempMax.toInt()}°C', style: TextStyle(color: Colors.purple.shade200, fontSize: 12)),
-                Slider(
-                  value: tempMax, min: 0, max: 45, divisions: 45,
-                  activeColor: Colors.purple,
-                  onChanged: (v) => setS(() => tempMax = v),
-                ),
+                Text('Temp. minima: ${tempMin.toInt()}C', style: TextStyle(color: Colors.purple.shade200, fontSize: 12)),
+                Slider(value: tempMin, min: 0, max: 40, divisions: 40, activeColor: Colors.purple, onChanged: (v) => setS(() => tempMin = v)),
+                Text('Temp. maxima: ${tempMax.toInt()}C', style: TextStyle(color: Colors.purple.shade200, fontSize: 12)),
+                Slider(value: tempMax, min: 0, max: 45, divisions: 45, activeColor: Colors.purple, onChanged: (v) => setS(() => tempMax = v)),
               ],
             ),
           ),
@@ -180,10 +136,7 @@ class _ArmarioScreenState extends State<ArmarioScreen> {
                 children: [
                   const Text('Mi armario', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white)),
                   ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.purple,
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    ),
+                    style: ElevatedButton.styleFrom(backgroundColor: Colors.purple, padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8)),
                     icon: const Icon(Icons.add, size: 16, color: Colors.white),
                     label: const Text('Agregar', style: TextStyle(color: Colors.white, fontSize: 12)),
                     onPressed: _agregarPrenda,
@@ -201,7 +154,7 @@ class _ArmarioScreenState extends State<ArmarioScreen> {
                       margin: const EdgeInsets.only(right: 8),
                       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                       decoration: BoxDecoration(
-                        color: _filtro == c ? Colors.purple : Colors.purple.withOpacity(0.15),
+                        color: _filtro == c ? Colors.purple : Colors.purple.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(c, style: TextStyle(color: _filtro == c ? Colors.white : Colors.purple.shade200, fontSize: 12)),
@@ -210,32 +163,22 @@ class _ArmarioScreenState extends State<ArmarioScreen> {
                 ),
               ),
               const SizedBox(height: 16),
-              Row(
-                children: [
-                  _statCard('${_prendas.length}', 'prendas'),
-                  const SizedBox(width: 8),
-                  _statCard('${_categorias.length - 1}', 'categorías'),
-                ],
-              ),
+              Row(children: [
+                _statCard('${_prendas.length}', 'prendas'),
+                const SizedBox(width: 8),
+                _statCard('${_categorias.length - 1}', 'categorias'),
+              ]),
               const SizedBox(height: 16),
               Expanded(
                 child: _prendasFiltradas.isEmpty
-                    ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.checkroom, size: 56, color: Colors.purple.withOpacity(0.4)),
-                      const SizedBox(height: 12),
-                      Text('Tu armario está vacío', style: TextStyle(color: Colors.purple.shade200, fontSize: 16)),
-                      const SizedBox(height: 4),
-                      Text('Toca + Agregar para empezar', style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
-                    ],
-                  ),
-                )
+                    ? Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+                  Icon(Icons.checkroom, size: 56, color: Colors.purple.withValues(alpha: 0.4)),
+                  const SizedBox(height: 12),
+                  Text('Tu armario esta vacio', style: TextStyle(color: Colors.purple.shade200, fontSize: 16)),
+                  Text('Toca + Agregar para empezar', style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
+                ]))
                     : GridView.builder(
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 3, crossAxisSpacing: 8, mainAxisSpacing: 8, childAspectRatio: 0.75,
-                  ),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 3, crossAxisSpacing: 8, mainAxisSpacing: 8, childAspectRatio: 0.75),
                   itemCount: _prendasFiltradas.length,
                   itemBuilder: (_, i) => _prendaCard(_prendasFiltradas[i]),
                 ),
@@ -252,16 +195,14 @@ class _ArmarioScreenState extends State<ArmarioScreen> {
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: Colors.purple.withOpacity(0.15),
+          color: Colors.purple.withValues(alpha: 0.15),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.purple.withOpacity(0.3)),
+          border: Border.all(color: Colors.purple.withValues(alpha: 0.3)),
         ),
-        child: Column(
-          children: [
-            Text(num, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white)),
-            Text(label, style: TextStyle(fontSize: 11, color: Colors.purple.shade200)),
-          ],
-        ),
+        child: Column(children: [
+          Text(num, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white)),
+          Text(label, style: TextStyle(fontSize: 11, color: Colors.purple.shade200)),
+        ]),
       ),
     );
   }
@@ -292,31 +233,25 @@ class _ArmarioScreenState extends State<ArmarioScreen> {
         decoration: BoxDecoration(
           color: const Color(0xFF1A1A2E),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.purple.withOpacity(0.3)),
+          border: Border.all(color: Colors.purple.withValues(alpha: 0.3)),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: ClipRRect(
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-                child: File(p.imagePath).existsSync()
-                    ? Image.file(File(p.imagePath), width: double.infinity, fit: BoxFit.cover)
-                    : Container(color: Colors.purple.withOpacity(0.2), child: const Icon(Icons.checkroom, color: Colors.purple)),
-              ),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Expanded(
+            child: ClipRRect(
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+              child: File(p.imagePath).existsSync()
+                  ? Image.file(File(p.imagePath), width: double.infinity, fit: BoxFit.cover)
+                  : Container(color: Colors.purple.withValues(alpha: 0.2), child: const Icon(Icons.checkroom, color: Colors.purple)),
             ),
-            Padding(
-              padding: const EdgeInsets.all(6),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(p.nombre, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white), maxLines: 1, overflow: TextOverflow.ellipsis),
-                  Text('${p.tempMin.toInt()}-${p.tempMax.toInt()}°C', style: TextStyle(fontSize: 9, color: Colors.purple.shade200)),
-                ],
-              ),
-            ),
-          ],
-        ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(6),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(p.nombre, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white), maxLines: 1, overflow: TextOverflow.ellipsis),
+              Text('${p.tempMin.toInt()}-${p.tempMax.toInt()}C', style: TextStyle(fontSize: 9, color: Colors.purple.shade200)),
+            ]),
+          ),
+        ]),
       ),
     );
   }
