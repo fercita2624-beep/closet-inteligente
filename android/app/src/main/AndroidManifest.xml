@@ -33,10 +33,3 @@
             android:value="2"/>
     </application>
 </manifest>
-    ```
-
-    Guarda con `Ctrl + S` y luego sube a GitHub:
-    ```
-    git add android/app/src/main/AndroidManifest.xml
-    git commit -m "Agregar permisos de ubicacion"
-    git push
