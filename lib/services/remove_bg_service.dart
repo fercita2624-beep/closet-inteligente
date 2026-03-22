@@ -9,17 +9,27 @@ class RemoveBgService {
   static Future<String?> quitarFondo(String imagePath) async {
     try {
       final dio = Dio();
+      dio.options.connectTimeout = const Duration(seconds: 30);
+      dio.options.receiveTimeout = const Duration(seconds: 30);
+
       final formData = FormData.fromMap({
-        'image_file': await MultipartFile.fromFile(imagePath),
+        'image_file': await MultipartFile.fromFile(
+          imagePath,
+          filename: 'prenda.jpg',
+        ),
         'size': 'auto',
+        'format': 'png',
       });
 
       final response = await dio.post(
         'https://api.remove.bg/v1.0/removebg',
         data: formData,
         options: Options(
-          headers: {'X-Api-Key': _apiKey},
+          headers: {
+            'X-Api-Key': _apiKey,
+          },
           responseType: ResponseType.bytes,
+          validateStatus: (status) => status != null && status < 500,
         ),
       );
 
@@ -29,11 +39,15 @@ class RemoveBgService {
         final filePath = '${dir.path}/$fileName';
         final file = File(filePath);
         await file.writeAsBytes(response.data as Uint8List);
-        return file.path;
+        if (await file.exists()) {
+          return file.path;
+        }
       }
-      return null;
+      // Si falla Remove.bg, regresa la imagen original
+      return imagePath;
     } catch (e) {
-      return null;
+      // Si hay cualquier error, regresa la imagen original sin fondo quitado
+      return imagePath;
     }
   }
 }
