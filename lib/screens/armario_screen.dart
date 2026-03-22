@@ -23,7 +23,7 @@ class _ArmarioScreenState extends State<ArmarioScreen> {
   Future<void> _cargar() async {
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getStringList('armario') ?? [];
-    setState(() {
+    if (mounted) setState(() {
       _prendas = raw.map((e) => PrendaArmario.fromJson(jsonDecode(e))).toList();
     });
   }
@@ -36,85 +36,17 @@ class _ArmarioScreenState extends State<ArmarioScreen> {
   Future<void> _agregarPrenda() async {
     final foto = await _picker.pickImage(source: ImageSource.camera, imageQuality: 70);
     if (foto == null) return;
-    _mostrarDialogoAgregar(foto.path);
-  }
-
-  void _mostrarDialogoAgregar(String imagePath) {
-    String nombre = '';
-    String categoria = 'Tops';
-    double tempMin = 15;
-    double tempMax = 30;
-
-    showDialog(
-      context: context,
-      builder: (_) => StatefulBuilder(
-        builder: (ctx, setS) => AlertDialog(
-          backgroundColor: const Color(0xFF1A1A2E),
-          title: const Text('Agregar prenda', style: TextStyle(color: Colors.white)),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: Image.file(File(imagePath), height: 120, width: double.infinity, fit: BoxFit.cover),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  style: const TextStyle(color: Colors.white),
-                  decoration: InputDecoration(
-                    labelText: 'Nombre de la prenda',
-                    labelStyle: TextStyle(color: Colors.purple.shade200),
-                    enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.purple.shade800)),
-                    focusedBorder: const OutlineInputBorder(borderSide: BorderSide(color: Colors.purple)),
-                  ),
-                  onChanged: (v) => nombre = v,
-                ),
-                const SizedBox(height: 12),
-                DropdownButtonFormField<String>(
-                  value: categoria,
-                  dropdownColor: const Color(0xFF1A1A2E),
-                  style: const TextStyle(color: Colors.white),
-                  decoration: InputDecoration(
-                    labelText: 'Categoria',
-                    labelStyle: TextStyle(color: Colors.purple.shade200),
-                    enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.purple.shade800)),
-                  ),
-                  items: ['Tops', 'Pants', 'Chamarras', 'Vestidos', 'Zapatos']
-                      .map((c) => DropdownMenuItem(value: c, child: Text(c)))
-                      .toList(),
-                  onChanged: (v) => setS(() => categoria = v!),
-                ),
-                const SizedBox(height: 12),
-                Text('Temp. minima: ${tempMin.toInt()}C', style: TextStyle(color: Colors.purple.shade200, fontSize: 12)),
-                Slider(value: tempMin, min: 0, max: 40, divisions: 40, activeColor: Colors.purple, onChanged: (v) => setS(() => tempMin = v)),
-                Text('Temp. maxima: ${tempMax.toInt()}C', style: TextStyle(color: Colors.purple.shade200, fontSize: 12)),
-                Slider(value: tempMax, min: 0, max: 45, divisions: 45, activeColor: Colors.purple, onChanged: (v) => setS(() => tempMax = v)),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.purple),
-              onPressed: () {
-                if (nombre.isEmpty) return;
-                final prenda = PrendaArmario(
-                  id: DateTime.now().millisecondsSinceEpoch.toString(),
-                  nombre: nombre, categoria: categoria,
-                  imagePath: imagePath, tempMin: tempMin,
-                  tempMax: tempMax, color: 'morado',
-                );
-                setState(() => _prendas.add(prenda));
-                _guardar();
-                Navigator.pop(ctx);
-              },
-              child: const Text('Guardar'),
-            ),
-          ],
-        ),
+    if (!mounted) return;
+    final resultado = await Navigator.push<PrendaArmario>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => AgregarPrendaScreen(imagePath: foto.path),
       ),
     );
+    if (resultado != null) {
+      setState(() => _prendas.add(resultado));
+      await _guardar();
+    }
   }
 
   List<PrendaArmario> get _prendasFiltradas => _filtro == 'Toda'
@@ -178,7 +110,8 @@ class _ArmarioScreenState extends State<ArmarioScreen> {
                   Text('Toca + Agregar para empezar', style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
                 ]))
                     : GridView.builder(
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 3, crossAxisSpacing: 8, mainAxisSpacing: 8, childAspectRatio: 0.75),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 3, crossAxisSpacing: 8, mainAxisSpacing: 8, childAspectRatio: 0.75),
                   itemCount: _prendasFiltradas.length,
                   itemBuilder: (_, i) => _prendaCard(_prendasFiltradas[i]),
                 ),
@@ -252,6 +185,103 @@ class _ArmarioScreenState extends State<ArmarioScreen> {
             ]),
           ),
         ]),
+      ),
+    );
+  }
+}
+
+class AgregarPrendaScreen extends StatefulWidget {
+  final String imagePath;
+  const AgregarPrendaScreen({super.key, required this.imagePath});
+  @override
+  State<AgregarPrendaScreen> createState() => _AgregarPrendaScreenState();
+}
+
+class _AgregarPrendaScreenState extends State<AgregarPrendaScreen> {
+  final _nombreController = TextEditingController();
+  String _categoria = 'Tops';
+  double _tempMin = 15;
+  double _tempMax = 30;
+
+  @override
+  void dispose() { _nombreController.dispose(); super.dispose(); }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFF0D0D1A),
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF1A1A2E),
+        title: const Text('Agregar prenda', style: TextStyle(color: Colors.white)),
+        iconTheme: const IconThemeData(color: Colors.purple),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: Image.file(File(widget.imagePath), width: double.infinity, height: 220, fit: BoxFit.cover),
+            ),
+            const SizedBox(height: 20),
+            TextField(
+              controller: _nombreController,
+              style: const TextStyle(color: Colors.white),
+              decoration: InputDecoration(
+                labelText: 'Nombre de la prenda',
+                labelStyle: TextStyle(color: Colors.purple.shade200),
+                enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.purple.shade800)),
+                focusedBorder: const OutlineInputBorder(borderSide: BorderSide(color: Colors.purple)),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text('Categoria', style: TextStyle(color: Colors.purple.shade200, fontSize: 13)),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8, runSpacing: 8,
+              children: ['Tops', 'Pants', 'Chamarras', 'Vestidos', 'Zapatos'].map((c) =>
+                  GestureDetector(
+                    onTap: () => setState(() => _categoria = c),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: _categoria == c ? Colors.purple : Colors.purple.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(c, style: TextStyle(color: _categoria == c ? Colors.white : Colors.purple.shade200)),
+                    ),
+                  ),
+              ).toList(),
+            ),
+            const SizedBox(height: 20),
+            Text('Temperatura minima: ${_tempMin.toInt()}C', style: TextStyle(color: Colors.purple.shade200)),
+            Slider(value: _tempMin, min: 0, max: 40, divisions: 40, activeColor: Colors.purple, onChanged: (v) => setState(() => _tempMin = v)),
+            Text('Temperatura maxima: ${_tempMax.toInt()}C', style: TextStyle(color: Colors.purple.shade200)),
+            Slider(value: _tempMax, min: 0, max: 45, divisions: 45, activeColor: Colors.purple, onChanged: (v) => setState(() => _tempMax = v)),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.purple, padding: const EdgeInsets.symmetric(vertical: 14)),
+                onPressed: () {
+                  if (_nombreController.text.isEmpty) return;
+                  final prenda = PrendaArmario(
+                    id: DateTime.now().millisecondsSinceEpoch.toString(),
+                    nombre: _nombreController.text,
+                    categoria: _categoria,
+                    imagePath: widget.imagePath,
+                    tempMin: _tempMin,
+                    tempMax: _tempMax,
+                    color: 'morado',
+                  );
+                  Navigator.pop(context, prenda);
+                },
+                child: const Text('Guardar en mi armario', style: TextStyle(color: Colors.white, fontSize: 16)),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
